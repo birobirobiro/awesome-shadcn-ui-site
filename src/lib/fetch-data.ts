@@ -17,6 +17,11 @@ export async function fetchReadmeContent() {
     path: 'README.md',
   })
 
+  // Type guard to check if response.data has the content property
+  if (Array.isArray(response.data) || !('content' in response.data)) {
+    throw new Error('Invalid response data')
+  }
+
   const content = Buffer.from(response.data.content, 'base64').toString()
   
   const resources: Resource[] = []
