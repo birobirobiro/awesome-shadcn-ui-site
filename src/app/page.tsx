@@ -1,6 +1,8 @@
+/* eslint-disable @next/next/no-img-element */
 import { Suspense } from "react";
 import { DataTable } from "@/components/data-table";
 import { fetchReadmeContent } from "@/lib/github";
+import Donation from "@/components/donation";
 
 export default async function Page() {
   const data = await fetchReadmeContent();
@@ -50,6 +52,8 @@ export default async function Page() {
           <DataTable data={data} />
         </Suspense>
       </div>
+
+      <Donation />
     </div>
   );
 }
