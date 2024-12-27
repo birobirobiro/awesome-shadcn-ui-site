@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { DataTable } from '@/components/data-table'
 import { fetchReadmeContent } from '@/lib/github'
+import { DonationBox } from '@/components/donation-box'
 
 export default async function Page() {
   const data = await fetchReadmeContent()
@@ -49,6 +50,8 @@ export default async function Page() {
           <DataTable data={data} />
         </Suspense>
       </div>
+
+      <DonationBox />
     </div>
   )
 }
