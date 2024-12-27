@@ -24,7 +24,7 @@ export default async function Page() {
 
       <div className="container mx-auto py-10 space-y-12">
         <div className="flex flex-col items-center justify-center space-y-4">
-          <div className="w-32 h-32">
+          <div className="w-48 h-48">
             <img
               src="https://raw.githubusercontent.com/birobirobiro/awesome-shadcn-ui/64729b2c178e3fdcb42c0c7bf341bcde7ae502ea/assets/logo.svg"
               alt="Awesome shadcn/ui logo"
