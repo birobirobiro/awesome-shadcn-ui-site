@@ -1,3 +1,5 @@
+import React, { useCallback } from "react";
+
 import { Input } from "@/components/ui/input";
 import { MultiSelect } from "@/components/ui/multi-select";
 import Sort from "@/components/sort";
@@ -7,20 +9,30 @@ interface SearchFilterControlsProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   categoryOptions: { label: string; value: string }[];
+  selectedCategories: string[];
   setSelectedCategories: (categories: string[]) => void;
-  handleSortChange: (
-    sortBy: "name" | "category",
-    direction: "asc" | "desc",
-  ) => void;
+  sortBy: "name";
+  sortDirection: "asc" | "desc";
+  handleSortChange: (sortBy: "name", direction: "asc" | "desc") => void;
 }
 
 export function SearchFilterControls({
   searchQuery,
   setSearchQuery,
   categoryOptions,
+  selectedCategories,
   setSelectedCategories,
+  sortBy,
+  sortDirection,
   handleSortChange,
 }: SearchFilterControlsProps) {
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setSearchQuery(e.target.value);
+    },
+    [setSearchQuery],
+  );
+
   return (
     <motion.div
       className="flex flex-col sm:flex-row justify-between items-center gap-4"
@@ -38,17 +50,22 @@ export function SearchFilterControls({
         type="text"
         placeholder="Search items..."
         value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
+        onChange={handleSearchChange}
         className="w-full sm:w-64"
       />
       <div className="w-full sm:w-auto flex flex-row items-center gap-4">
         <MultiSelect
           options={categoryOptions}
+          value={selectedCategories}
           onValueChange={setSelectedCategories}
           placeholder="Filter by category"
           className="w-full sm:w-64"
         />
-        <Sort onSort={handleSortChange} />
+        <Sort
+          sortBy="name"
+          direction={sortDirection}
+          onSort={handleSortChange}
+        />
       </div>
     </motion.div>
   );
