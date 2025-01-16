@@ -1,10 +1,5 @@
-import {
-  ArrowUpDown,
-  ChevronDown,
-  ChevronUp,
-  SortAsc,
-  SortDesc,
-} from "lucide-react";
+import { ArrowUpDown, SortAsc, SortDesc } from "lucide-react";
+import React, { useCallback, useMemo } from "react";
 import {
   Select,
   SelectContent,
@@ -12,14 +7,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCallback, useState } from "react";
 
 interface SortProps {
-  onSort: (sortBy: "name" | "category", direction: "asc" | "desc") => void;
+  sortBy: "name";
+  direction: "asc" | "desc";
+  onSort: (sortBy: "name", direction: "asc" | "desc") => void;
 }
 
 interface SortOption {
-  value: "name" | "category";
+  value: "name";
   label: string;
   icon: React.ReactNode;
 }
@@ -30,67 +26,53 @@ const sortOptions: SortOption[] = [
     label: "Name",
     icon: <ArrowUpDown className="h-4 w-4 mr-2" />,
   },
-  {
-    value: "category",
-    label: "Category",
-    icon: <ArrowUpDown className="h-4 w-4 mr-2" />,
-  },
 ];
 
-export default function Sort({ onSort }: SortProps) {
-  const [sortState, setSortState] = useState<{
-    by: "name" | "category";
-    direction: "asc" | "desc";
-  }>({
-    by: "name",
-    direction: "asc",
-  });
-
+export default function Sort({ sortBy, direction, onSort }: SortProps) {
   const handleSortChange = useCallback(
     (value: string) => {
-      const [newSortBy, newDirection] = value.split("-") as [
-        "name" | "category",
-        "asc" | "desc",
-      ];
-      setSortState({ by: newSortBy, direction: newDirection });
-      onSort(newSortBy, newDirection);
+      const [, newDirection] = value.split("-") as ["name", "asc" | "desc"];
+      onSort("name", newDirection);
     },
     [onSort],
   );
 
+  const sortItems = useMemo(
+    () => [
+      {
+        key: "name-desc",
+        value: "name-desc",
+        label: "Name",
+        icon: <SortDesc className="h-4 w-4 ml-2 inline" />,
+      },
+      {
+        key: "name-asc",
+        value: "name-asc",
+        label: "Name",
+        icon: <SortAsc className="h-4 w-4 ml-2 inline" />,
+      },
+    ],
+    [],
+  );
+
   return (
-    <Select
-      onValueChange={handleSortChange}
-      value={`${sortState.by}-${sortState.direction}`}
-    >
+    <Select onValueChange={handleSortChange} value={`${sortBy}-${direction}`}>
       <SelectTrigger className="flex items-center justify-between w-[180px]">
         <SelectValue>
-          {sortOptions.find((option) => option.value === sortState.by)?.label}
-          {sortState.direction === "asc" ? (
-            <SortAsc className="h-4 w-4 ml-2 inline" />
-          ) : (
+          {sortOptions.find((option) => option.value === sortBy)?.label}
+          {direction === "asc" ? (
             <SortDesc className="h-4 w-4 ml-2 inline" />
+          ) : (
+            <SortAsc className="h-4 w-4 ml-2 inline" />
           )}
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
-        {sortOptions.map((option) => (
-          <>
-            <SelectItem
-              key={`${option.value}-asc`}
-              value={`${option.value}-asc`}
-            >
-              {option.label}
-              <SortAsc className="h-4 w-4 ml-2 inline" />
-            </SelectItem>
-            <SelectItem
-              key={`${option.value}-desc`}
-              value={`${option.value}-desc`}
-            >
-              {option.label}
-              <SortDesc className="h-4 w-4 ml-2 inline" />
-            </SelectItem>
-          </>
+        {sortItems.map((item) => (
+          <SelectItem key={item.key} value={item.value}>
+            {item.label}
+            {item.icon}
+          </SelectItem>
         ))}
       </SelectContent>
     </Select>

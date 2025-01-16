@@ -1,3 +1,4 @@
+import { Bookmark, ExternalLink } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -8,31 +9,43 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink } from "lucide-react";
+import React from "react";
 import { motion } from "framer-motion";
 
 interface ItemCardProps {
+  id: number;
   title: string;
   description: string;
   url: string;
   category: string;
+  isBookmarked: boolean;
+  onBookmark: (id: number) => void;
 }
 
-export default function ItemCard({
+const ItemCard: React.FC<ItemCardProps> = ({
+  id,
   title,
   description,
   url,
   category,
-}: ItemCardProps) {
+  isBookmarked,
+  onBookmark,
+}) => {
   return (
-    <motion.div transition={{ type: "spring", stiffness: 300, damping: 10 }}>
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    >
       <Card className="flex flex-col h-full min-h-[250px] overflow-hidden">
         <CardHeader className="pb-4">
           <div className="flex justify-between items-start">
             <CardTitle className="text-lg font-bold line-clamp-2">
               {title}
             </CardTitle>
-            <Badge variant="secondary" className="ml-2 shrink-0">
+            <Badge variant="secondary" className="shrink-0">
               {category}
             </Badge>
           </div>
@@ -40,7 +53,19 @@ export default function ItemCard({
         <CardContent className="flex-grow">
           <p className="text-sm text-muted-foreground">{description}</p>
         </CardContent>
-        <CardFooter className="pt-4">
+        <CardFooter className="pt-4 flex gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => onBookmark(id)}
+            className={`transition-colors flex-shrink-0 ${
+              isBookmarked
+                ? "text-yellow-500 hover:text-yellow-600 border-yellow-600"
+                : "text-gray-400 hover:text-gray-500"
+            }`}
+          >
+            <Bookmark className="h-5 w-5" />
+          </Button>
           <Button asChild className="w-full group" variant="outline">
             <a
               href={url}
@@ -56,4 +81,6 @@ export default function ItemCard({
       </Card>
     </motion.div>
   );
-}
+};
+
+export default ItemCard;
