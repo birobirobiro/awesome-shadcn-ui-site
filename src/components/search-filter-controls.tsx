@@ -62,7 +62,7 @@ export function SearchFilterControls({
           className="w-full sm:w-64"
         />
         <Sort
-          sortBy="name"
+          sortBy={sortBy}
           direction={sortDirection}
           onSort={handleSortChange}
         />

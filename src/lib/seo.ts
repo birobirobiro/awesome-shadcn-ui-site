@@ -11,7 +11,7 @@ export const defaultSEO: DefaultSeoProps = {
     siteName: "awesome-shadcn-ui",
     images: [
       {
-        url: "https://i.ibb.co/wdxr6M8/logo.png",
+        url: "https://i.ibb.co/wdxr6M8/seo.png",
         width: 1200,
         height: 630,
         alt: "awesome-shadcn-ui",

@@ -72,7 +72,7 @@ export async function fetchAndParseReadme(): Promise<Resource[]> {
         resource.name !== "Name" &&
         resource.description !== "Description" &&
         resource.url !== "Link" &&
-        resource.url !== ""
+        resource.url !== "",
     );
 
     return filteredResources;
