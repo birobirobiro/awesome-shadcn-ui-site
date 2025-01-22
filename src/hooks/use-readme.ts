@@ -40,11 +40,13 @@ export async function fetchAndParseReadme(): Promise<Resource[]> {
       ) {
         const parts = line.split("|").map((part) => part.trim());
         if (parts.length >= 4) {
+          const url = parts[3];
+          const formattedUrl = url.startsWith("[") ? url : `[Link](${url})`;
           resources.push({
             id: id++,
             name: parts[1],
             description: parts[2],
-            url: parts[3],
+            url: formattedUrl,
             category: currentCategory,
           });
         }
