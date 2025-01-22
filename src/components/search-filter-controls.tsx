@@ -1,9 +1,9 @@
-import React, { useCallback } from "react";
-
 import { Input } from "@/components/ui/input";
 import { MultiSelect } from "@/components/ui/multi-select";
+import type React from "react";
 import Sort from "@/components/sort";
 import { motion } from "framer-motion";
+import { useCallback } from "react";
 
 interface SearchFilterControlsProps {
   searchQuery: string;
@@ -11,9 +11,8 @@ interface SearchFilterControlsProps {
   categoryOptions: { label: string; value: string }[];
   selectedCategories: string[];
   setSelectedCategories: (categories: string[]) => void;
-  sortBy: "name";
   sortDirection: "asc" | "desc";
-  handleSortChange: (sortBy: "name", direction: "asc" | "desc") => void;
+  handleSortChange: (direction: "asc" | "desc") => void;
 }
 
 export function SearchFilterControls({
@@ -22,7 +21,6 @@ export function SearchFilterControls({
   categoryOptions,
   selectedCategories,
   setSelectedCategories,
-  sortBy,
   sortDirection,
   handleSortChange,
 }: SearchFilterControlsProps) {
@@ -61,11 +59,7 @@ export function SearchFilterControls({
           placeholder="Filter by category"
           className="w-full sm:w-64"
         />
-        <Sort
-          sortBy="name"
-          direction={sortDirection}
-          onSort={handleSortChange}
-        />
+        <Sort direction={sortDirection} onSort={handleSortChange} />
       </div>
     </motion.div>
   );
