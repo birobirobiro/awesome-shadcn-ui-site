@@ -40,7 +40,6 @@ export default function ItemList({
   const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE_OPTIONS[0]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [sortBy] = useState<"name">("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -98,7 +97,6 @@ export default function ItemList({
   }, [filterAndSortItems]);
 
   useEffect(() => {
-    // Simulate loading delay while fetching data
     const timer = setTimeout(() => setIsLoading(false), 100);
     return () => clearTimeout(timer);
   }, []);
@@ -117,12 +115,9 @@ export default function ItemList({
     setCurrentPage(1);
   }, []);
 
-  const handleSortChange = useCallback(
-    (newSortBy: "name", newDirection: "asc" | "desc") => {
-      setSortDirection(newDirection);
-    },
-    [],
-  );
+  const handleSortChange = useCallback((newDirection: "asc" | "desc") => {
+    setSortDirection(newDirection);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -132,7 +127,6 @@ export default function ItemList({
         categoryOptions={categoryOptions}
         selectedCategories={selectedCategories}
         setSelectedCategories={setSelectedCategories}
-        sortBy={sortBy}
         sortDirection={sortDirection}
         handleSortChange={handleSortChange}
       />
