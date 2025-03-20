@@ -1,4 +1,4 @@
-import { Bookmark, ExternalLink } from "lucide-react";
+import { Bookmark, Calendar, ExternalLink } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -18,6 +18,7 @@ interface ItemCardProps {
   description: string;
   url: string;
   category: string;
+  date?: string;
   isBookmarked: boolean;
   onBookmark: (id: number) => void;
 }
@@ -28,6 +29,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
   description,
   url,
   category,
+  date,
   isBookmarked,
   onBookmark,
 }) => {
@@ -52,6 +54,10 @@ const ItemCard: React.FC<ItemCardProps> = ({
         </CardHeader>
         <CardContent className="flex-grow">
           <p className="text-sm text-muted-foreground">{description}</p>
+          <div className="flex items-center mt-2 text-xs text-muted-foreground">
+            <Calendar className="h-3 w-3 mr-1" />
+            <span>Added: {date}</span>
+          </div>
         </CardContent>
         <CardFooter className="pt-4 flex gap-2">
           <Button

@@ -3,9 +3,11 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { isValid, parseISO } from "date-fns";
 
 import { ItemGrid } from "../item-grid";
 import { PaginationControls } from "../pagination-controls";
+import { Resource } from "@/hooks/use-readme";
 import { SearchFilterControls } from "../search-filter-controls";
 import { Skeleton } from "../ui/skeleton";
 import { useBookmarks } from "@/hooks/use-bookmark";
@@ -13,21 +15,13 @@ import { useDebounce } from "@/hooks/use-debounce";
 
 const ITEMS_PER_PAGE_OPTIONS = [18, 27, 36, 45];
 
-interface Item {
-  id: number;
-  name: string;
-  description: string;
-  url: string;
-  category: string;
-}
-
 interface Category {
   title: string;
-  items: Item[];
+  items: Resource[];
 }
 
 interface ItemListProps {
-  items: Item[];
+  items: Resource[];
   categories: Category[];
 }
 
@@ -35,12 +29,12 @@ export default function ItemList({
   items: initialItems,
   categories,
 }: ItemListProps) {
-  const [filteredItems, setFilteredItems] = useState<Item[]>(initialItems);
+  const [filteredItems, setFilteredItems] = useState<Resource[]>(initialItems);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE_OPTIONS[0]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [sortOption, setSortOption] = useState<string>("date-asc");
   const [isLoading, setIsLoading] = useState(true);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -78,8 +72,26 @@ export default function ItemList({
       const bBookmarked = bookmarkedItems.includes(b.id);
       if (aBookmarked !== bBookmarked) return aBookmarked ? -1 : 1;
 
-      const compareResult = (a.name || "").localeCompare(b.name || "");
-      return sortDirection === "asc" ? compareResult : -compareResult;
+      // Parse the sort option
+      const [field, direction] = sortOption.split("-");
+
+      if (field === "name") {
+        const compareResult = (a.name || "").localeCompare(b.name || "");
+        return direction === "asc" ? compareResult : -compareResult;
+      } else {
+        // Sort by date
+        const dateA =
+          a.date && a.date !== "Unknown" ? parseISO(a.date) : new Date(0);
+        const dateB =
+          b.date && b.date !== "Unknown" ? parseISO(b.date) : new Date(0);
+
+        if (!isValid(dateA)) return direction === "asc" ? -1 : 1;
+        if (!isValid(dateB)) return direction === "asc" ? 1 : -1;
+
+        return direction === "asc"
+          ? dateA.getTime() - dateB.getTime()
+          : dateB.getTime() - dateA.getTime();
+      }
     });
 
     setFilteredItems(filtered);
@@ -88,7 +100,7 @@ export default function ItemList({
     initialItems,
     debouncedSearchQuery,
     selectedCategories,
-    sortDirection,
+    sortOption,
     bookmarkedItems,
   ]);
 
@@ -115,8 +127,8 @@ export default function ItemList({
     setCurrentPage(1);
   }, []);
 
-  const handleSortChange = useCallback((newDirection: "asc" | "desc") => {
-    setSortDirection(newDirection);
+  const handleSortChange = useCallback((option: string) => {
+    setSortOption(option);
   }, []);
 
   return (
@@ -127,8 +139,8 @@ export default function ItemList({
         categoryOptions={categoryOptions}
         selectedCategories={selectedCategories}
         setSelectedCategories={setSelectedCategories}
-        sortDirection={sortDirection}
-        handleSortChange={handleSortChange}
+        sortOption={sortOption}
+        onSortChange={handleSortChange}
       />
 
       <AnimatePresence mode="wait">

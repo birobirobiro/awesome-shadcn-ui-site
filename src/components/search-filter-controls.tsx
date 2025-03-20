@@ -11,8 +11,8 @@ interface SearchFilterControlsProps {
   categoryOptions: { label: string; value: string }[];
   selectedCategories: string[];
   setSelectedCategories: (categories: string[]) => void;
-  sortDirection: "asc" | "desc";
-  handleSortChange: (direction: "asc" | "desc") => void;
+  sortOption: string;
+  onSortChange: (option: string) => void;
 }
 
 export function SearchFilterControls({
@@ -21,8 +21,8 @@ export function SearchFilterControls({
   categoryOptions,
   selectedCategories,
   setSelectedCategories,
-  sortDirection,
-  handleSortChange,
+  sortOption,
+  onSortChange,
 }: SearchFilterControlsProps) {
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,7 +59,7 @@ export function SearchFilterControls({
           placeholder="Filter by category"
           className="w-full sm:w-64"
         />
-        <Sort direction={sortDirection} onSort={handleSortChange} />
+        <Sort sortOption={sortOption} onSortChange={onSortChange} />
       </div>
     </motion.div>
   );
