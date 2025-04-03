@@ -23,7 +23,7 @@ export function Footer() {
           <div className="flex flex-col items-center md:items-end space-y-4">
             <div className="flex space-x-4">
               <a
-                href="https://github.com/birobirobiro/awesome-shadcn-ui"
+                href="https://github.com/birobirobiro/awesome-shadcn-ui-site"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground transition-colors"
