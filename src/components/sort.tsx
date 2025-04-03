@@ -1,3 +1,4 @@
+import { Calendar, SortAsc, SortDesc, Text } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -5,56 +6,68 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SortAsc, SortDesc } from "lucide-react";
 
 import React from "react";
 
 interface SortProps {
-  direction: "asc" | "desc";
-  onSort: (direction: "asc" | "desc") => void;
+  sortOption: string;
+  onSortChange: (option: string) => void;
 }
 
-export default function Sort({ direction, onSort }: SortProps) {
-  const handleSortChange = (value: string) => {
-    onSort(value as "asc" | "desc");
-  };
-
+export default function Sort({ sortOption, onSortChange }: SortProps) {
   const sortItems = [
     {
-      key: "desc",
-      value: "desc",
-      label: "Name (Z-A)",
-      icon: <SortDesc className="h-4 w-4 ml-2 inline" />,
+      key: "date-asc",
+      value: "date-asc",
+      label: "Date (Oldest)",
+      icon: <Calendar className="h-4 w-4 mr-2" />,
+      directionIcon: <SortAsc className="h-4 w-4 ml-2 inline" />,
     },
     {
-      key: "asc",
-      value: "asc",
+      key: "date-desc",
+      value: "date-desc",
+      label: "Date (Newest)",
+      icon: <Calendar className="h-4 w-4 mr-2" />,
+      directionIcon: <SortDesc className="h-4 w-4 ml-2 inline" />,
+    },
+    {
+      key: "name-asc",
+      value: "name-asc",
       label: "Name (A-Z)",
-      icon: <SortAsc className="h-4 w-4 ml-2 inline" />,
+      icon: <Text className="h-4 w-4 mr-2" />,
+      directionIcon: <SortAsc className="h-4 w-4 ml-2 inline" />,
+    },
+    {
+      key: "name-desc",
+      value: "name-desc",
+      label: "Name (Z-A)",
+      icon: <Text className="h-4 w-4 mr-2" />,
+      directionIcon: <SortDesc className="h-4 w-4 ml-2 inline" />,
     },
   ];
 
+  const selectedItem =
+    sortItems.find((item) => item.value === sortOption) || sortItems[0];
+
   return (
-    <Select
-      defaultValue="asc"
-      onValueChange={handleSortChange}
-      value={direction}
-    >
+    <Select value={sortOption} onValueChange={onSortChange}>
       <SelectTrigger className="flex items-center justify-between w-[180px]">
         <SelectValue>
-          {direction === "asc" ? "Name (A-Z)" : "Name (Z-A)"}
-          {direction === "asc" ? (
-            <SortAsc className="h-4 w-4 ml-2 inline" />
-          ) : (
-            <SortDesc className="h-4 w-4 ml-2 inline" />
-          )}
+          <span className="flex items-center">
+            {selectedItem.icon}
+            {selectedItem.label}
+            {selectedItem.directionIcon}
+          </span>
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {sortItems.map((item) => (
           <SelectItem key={item.key} value={item.value}>
-            {item.label}
-            {item.icon}
+            <span className="flex items-center">
+              {item.icon}
+              {item.label}
+              {item.directionIcon}
+            </span>
           </SelectItem>
         ))}
       </SelectContent>

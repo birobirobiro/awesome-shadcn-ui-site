@@ -8,6 +8,7 @@ export interface Resource {
   url: string;
   description: string;
   category: string;
+  date: string;
 }
 
 export async function fetchAndParseReadme(): Promise<Resource[]> {
@@ -41,11 +42,10 @@ export async function fetchAndParseReadme(): Promise<Resource[]> {
         const parts = line.split("|").map((part) => part.trim());
         if (parts.length >= 4) {
           let url = parts[3];
-          console.log("Processing line:", line);
-          console.log("Original URL part:", url);
+          let date = "Unknown";
 
           // Extract URL from markdown link format [Link](url)
-          const markdownMatch = url.match(/\[.*?\]\((.*?)\)/);
+          const markdownMatch = url.match(/\[.*?\]$$(.*?)$$/);
           if (markdownMatch && markdownMatch[1]) {
             url = markdownMatch[1];
           } else {
@@ -53,7 +53,10 @@ export async function fetchAndParseReadme(): Promise<Resource[]> {
             url = url.replace(/^Link:?\s*/i, "").trim();
           }
 
-          console.log("Final extracted URL:", url);
+          // Check if there's a date column (parts.length >= 5)
+          if (parts.length >= 5) {
+            date = parts[4];
+          }
 
           resources.push({
             id: id++,
@@ -61,6 +64,7 @@ export async function fetchAndParseReadme(): Promise<Resource[]> {
             description: parts[2],
             url: url,
             category: currentCategory,
+            date: date,
           });
         }
       }
