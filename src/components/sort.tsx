@@ -19,16 +19,16 @@ export default function Sort({ sortOption, onSortChange }: SortProps) {
     {
       key: "date-asc",
       value: "date-asc",
-      label: "Date (Oldest)",
+      label: "Date (Newest)",
       icon: <Calendar className="h-4 w-4 mr-2" />,
-      directionIcon: <SortAsc className="h-4 w-4 ml-2 inline" />,
+      directionIcon: <SortDesc className="h-4 w-4 ml-2 inline" />,
     },
     {
       key: "date-desc",
       value: "date-desc",
-      label: "Date (Newest)",
+      label: "Date (Oldest)",
       icon: <Calendar className="h-4 w-4 mr-2" />,
-      directionIcon: <SortDesc className="h-4 w-4 ml-2 inline" />,
+      directionIcon: <SortAsc className="h-4 w-4 ml-2 inline" />,
     },
     {
       key: "name-asc",
