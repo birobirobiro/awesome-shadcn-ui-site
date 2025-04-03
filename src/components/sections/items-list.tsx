@@ -34,7 +34,7 @@ export default function ItemList({
   const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE_OPTIONS[0]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [sortOption, setSortOption] = useState<string>("date-asc");
+  const [sortOption, setSortOption] = useState<string>("date-desc");
   const [isLoading, setIsLoading] = useState(true);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
