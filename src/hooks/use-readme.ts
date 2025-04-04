@@ -45,9 +45,9 @@ export async function fetchAndParseReadme(): Promise<Resource[]> {
           let date = "Unknown";
 
           // Extract URL from markdown link format [Link](url)
-          const markdownMatch = url.match(/\[.*?\]$$(.*?)$$/);
-          if (markdownMatch && markdownMatch[1]) {
-            url = markdownMatch[1];
+          const markdownMatch = url.match(/\[(.*?)\]\((.*?)\)/);
+          if (markdownMatch && markdownMatch[2]) {
+            url = markdownMatch[2];
           } else {
             // If not in markdown format, remove any "Link:" prefix
             url = url.replace(/^Link:?\s*/i, "").trim();

@@ -1,8 +1,8 @@
+import Sort, { SortOption } from "@/components/sort";
 import { Input } from "@/components/ui/input";
 import { MultiSelect } from "@/components/ui/multi-select";
-import type React from "react";
-import Sort from "@/components/sort";
 import { motion } from "framer-motion";
+import type React from "react";
 import { useCallback } from "react";
 
 interface SearchFilterControlsProps {
@@ -11,8 +11,8 @@ interface SearchFilterControlsProps {
   categoryOptions: { label: string; value: string }[];
   selectedCategories: string[];
   setSelectedCategories: (categories: string[]) => void;
-  sortOption: string;
-  onSortChange: (option: string) => void;
+  sortOption: SortOption;
+  onSortChange: (option: SortOption) => void;
 }
 
 export function SearchFilterControls({

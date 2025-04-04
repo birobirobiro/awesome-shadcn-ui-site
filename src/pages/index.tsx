@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
 import { Resource, fetchAndParseReadme } from "@/hooks/use-readme";
+import { isValid, parseISO } from "date-fns";
+import { useEffect, useState } from "react";
 
+import { SubmitCTA } from "@/components/sections/cta-submit";
 import Hero from "@/components/sections/hero";
 import ItemList from "@/components/sections/items-list";
-import { SubmitCTA } from "@/components/sections/cta-submit";
 import { motion } from "framer-motion";
 
 interface Category {
@@ -18,11 +19,15 @@ const EXCLUDED_CATEGORIES = ["Star History", "Contributors"];
 export default function Home() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredItems, setFilteredItems] = useState<Resource[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       try {
+        setIsLoading(true);
         const fetchedResources = await fetchAndParseReadme();
+
+        // Process categories
         const groupedCategories = fetchedResources.reduce(
           (acc, resource) => {
             if (!EXCLUDED_CATEGORIES.includes(resource.category)) {
@@ -43,14 +48,30 @@ export default function Home() {
           }),
         );
 
-        setCategories(formattedCategories);
-        setFilteredItems(
-          fetchedResources.filter(
-            (item) => !EXCLUDED_CATEGORIES.includes(item.category),
-          ),
+        // Filter out excluded categories
+        const eligibleItems = fetchedResources.filter(
+          (item) => !EXCLUDED_CATEGORIES.includes(item.category),
         );
+
+        // Sort items by date (newest first) initially
+        const sortedItems = eligibleItems.sort((a, b) => {
+          const dateA =
+            a.date && a.date !== "Unknown" ? parseISO(a.date) : new Date(0);
+          const dateB =
+            b.date && b.date !== "Unknown" ? parseISO(b.date) : new Date(0);
+
+          if (!isValid(dateA)) return 1;
+          if (!isValid(dateB)) return -1;
+
+          return dateB.getTime() - dateA.getTime();
+        });
+
+        setCategories(formattedCategories);
+        setFilteredItems(sortedItems);
       } catch (error) {
         console.error("Error fetching README:", error);
+      } finally {
+        setIsLoading(false);
       }
     }
 
