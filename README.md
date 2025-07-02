@@ -26,4 +26,3 @@ The website provides a categorized list of shadcn/ui resources, including:
 Contribute to awesome-shadcn/ui
 
 Have an awesome shadcn/ui related project or resource? Share it with the community! [Open a PR](https://github.com/birobirobiro/awesome-shadcn-ui/blob/main/.github/pull_request_template.md) and help grow this curated list.
-

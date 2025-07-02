@@ -11,7 +11,17 @@ export interface Resource {
   date: string;
 }
 
+// Simple cache with 30-minute expiration
+let cachedData: Resource[] | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+
 export async function fetchAndParseReadme(): Promise<Resource[]> {
+  // Check if we have valid cached data
+  if (cachedData && Date.now() - cacheTimestamp < CACHE_DURATION) {
+    return cachedData;
+  }
+
   try {
     const response = await octokit.repos.getContent({
       owner: "birobirobiro",
@@ -70,14 +80,18 @@ export async function fetchAndParseReadme(): Promise<Resource[]> {
       }
     }
 
-    // Filter out unwanted entries
     const filteredResources = resources.filter(
       (resource) =>
         resource.name !== "Name" &&
         resource.description !== "Description" &&
         resource.url !== "Link" &&
-        resource.url !== "",
+        resource.url !== "" &&
+        resource.date !== "Added: ----------" &&
+        !resource.date.includes("----------"),
     );
+
+    cachedData = filteredResources;
+    cacheTimestamp = Date.now();
 
     return filteredResources;
   } catch (error) {

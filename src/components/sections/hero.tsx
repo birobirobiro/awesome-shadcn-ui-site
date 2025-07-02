@@ -2,18 +2,48 @@
 
 import { motion } from "framer-motion";
 
-const containerVariants = {
+// Orchestrates the entire hero section animation
+const heroContainerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.2,
-      delayChildren: 0.3,
+      // Stagger the logo and the text block
+      staggerChildren: 0.6,
     },
   },
 };
 
-const itemVariants = {
+// Animation for the logo: starts large, scales down
+const logoVariants = {
+  hidden: { opacity: 0, scale: 1.5, y: 50 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15,
+      mass: 1,
+    },
+  },
+};
+
+// Orchestrates the animation for the block of text elements
+const textContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      // Stagger each line of text
+      staggerChildren: 0.15,
+    },
+  },
+};
+
+// Standard animation for individual text elements
+const textItemVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
@@ -29,51 +59,70 @@ export default function Hero() {
   return (
     <motion.div
       className="flex flex-col items-center justify-center space-y-4 text-center"
-      variants={containerVariants}
+      variants={heroContainerVariants}
       initial="hidden"
       animate="visible"
     >
-      <motion.div variants={itemVariants}>
+      {/* Logo animates in first */}
+      <motion.div variants={logoVariants}>
         <img
           src="/logo.svg"
           alt="awesome-shadcn/ui logo"
           className="max-h-36"
         />
       </motion.div>
-      <motion.h1
-        className="text-4xl font-bold tracking-tighter sm:text-5xl"
-        variants={itemVariants}
-      >
-        awesome-shadcn/ui
-      </motion.h1>
-      <motion.p
-        className="max-w-[900px] text-muted-foreground"
-        variants={itemVariants}
-      >
-        A curated list of awesome things related to{" "}
-        <a
-          href="https://ui.shadcn.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline"
+
+      {/* Text content animates in as a group after the logo */}
+      <motion.div className="space-y-2" variants={textContainerVariants}>
+        <motion.h1
+          className="text-4xl font-bold tracking-tighter sm:text-5xl"
+          variants={textItemVariants}
         >
-          shadcn/ui
-        </a>
-      </motion.p>
-      <motion.p
-        className="text-sm text-muted-foreground"
-        variants={itemVariants}
-      >
-        Created by:{" "}
-        <a
-          href="https://birobirobiro.dev/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline"
+          awesome-shadcn/ui
+        </motion.h1>
+        <motion.p
+          className="max-w-[900px] text-muted-foreground mb-4"
+          variants={textItemVariants}
         >
-          birobirobiro.dev
-        </a>
-      </motion.p>
+          A curated list of awesome things related to{" "}
+          <a
+            href="https://ui.shadcn.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            shadcn/ui
+          </a>
+        </motion.p>
+        <motion.p
+          className="text-sm text-muted-foreground"
+          variants={textItemVariants}
+        >
+          Created by:{" "}
+          <a
+            href="https://birobirobiro.dev/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            birobirobiro.dev
+          </a>
+        </motion.p>
+        <motion.p
+          className="text-xs text-muted-foreground"
+          variants={textItemVariants}
+        >
+          Site by:{" "}
+          <a
+            href="https://bankkroll.xyz"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            bankkroll.xyz
+          </a>
+        </motion.p>
+      </motion.div>
     </motion.div>
   );
 }

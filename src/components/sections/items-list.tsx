@@ -51,7 +51,11 @@ export default function ItemList({
   const [layoutType, setLayoutType] = useState<LayoutType>("grid");
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
-  const { bookmarkedItems, toggleBookmark } = useBookmarks();
+  const {
+    bookmarkedItems,
+    toggleBookmark,
+    isLoading: isBookmarkLoading,
+  } = useBookmarks();
 
   const categoryOptions = useMemo(
     () =>
@@ -213,166 +217,196 @@ export default function ItemList({
     }
   }, [layoutType]);
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <SearchFilterControls
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          categoryOptions={categoryOptions}
-          selectedCategories={selectedCategories}
-          setSelectedCategories={setSelectedCategories}
-          sortOption={sortOption}
-          onSortChange={handleSortChange}
-        />
+    <motion.div
+      className="space-y-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div variants={itemVariants}>
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+          <SearchFilterControls
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            categoryOptions={categoryOptions}
+            selectedCategories={selectedCategories}
+            setSelectedCategories={setSelectedCategories}
+            sortOption={sortOption}
+            onSortChange={handleSortChange}
+          />
 
-        <div className="flex items-center justify-end w-full sm:w-auto mt-4 sm:mt-0">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.4, type: "spring" }}
-          >
-            <TooltipProvider delayDuration={300}>
-              <ToggleGroup
-                type="single"
-                value={layoutType}
-                onValueChange={handleLayoutChange}
-                className="relative border rounded-md bg-background/50 backdrop-blur-sm shadow-sm"
-              >
-                <motion.div
-                  layoutId="activeLayoutIndicator"
-                  className="absolute bottom-0 h-[3px] bg-primary z-10 transition-all duration-300"
-                  style={{
-                    width: "24px",
-                    left:
-                      layoutType === "compact"
-                        ? "6px"
-                        : layoutType === "grid"
-                          ? "46px"
-                          : "86px",
-                  }}
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                />
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <ToggleGroupItem
-                      value="compact"
-                      aria-label="Compact Grid View"
-                      className="relative z-20 data-[state=on]:bg-primary/10 data-[state=on]:text-primary hover:bg-muted/70 transition-all"
-                    >
-                      <Grid3X3 className="h-4 w-4" />
-                    </ToggleGroupItem>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="bottom"
-                    align="center"
-                    className="font-medium"
-                  >
-                    Compact Grid
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <ToggleGroupItem
-                      value="grid"
-                      aria-label="Grid View"
-                      className="relative z-20 data-[state=on]:bg-primary/10 data-[state=on]:text-primary hover:bg-muted/70 transition-all"
-                    >
-                      <Grid2X2 className="h-4 w-4" />
-                    </ToggleGroupItem>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="bottom"
-                    align="center"
-                    className="font-medium"
-                  >
-                    Standard Grid
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <ToggleGroupItem
-                      value="row"
-                      aria-label="Row View"
-                      className="relative z-20 data-[state=on]:bg-primary/10 data-[state=on]:text-primary hover:bg-muted/70 transition-all"
-                    >
-                      <List className="h-4 w-4" />
-                    </ToggleGroupItem>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="bottom"
-                    align="center"
-                    className="font-medium"
-                  >
-                    List View
-                  </TooltipContent>
-                </Tooltip>
-              </ToggleGroup>
-            </TooltipProvider>
-          </motion.div>
-        </div>
-      </div>
-
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={`${isLoading ? "loading" : "loaded"}-${layoutType}`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          layout
-        >
-          {isLoading ? (
-            <div className={`grid gap-6 ${getGridClasses()}`}>
-              {[...Array(itemsPerPage)].map((_, index) => (
-                <Card
-                  key={index}
-                  className={`flex flex-col h-full ${getCardHeightClass()} overflow-hidden`}
+          <div className="flex items-center justify-end w-full sm:w-auto mt-4 sm:mt-0">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.4, type: "spring" }}
+            >
+              <TooltipProvider delayDuration={300}>
+                <ToggleGroup
+                  type="single"
+                  value={layoutType}
+                  onValueChange={handleLayoutChange}
+                  className="relative border rounded-md bg-background/50 backdrop-blur-sm shadow-sm"
                 >
-                  <CardHeader className="pb-4">
-                    <div className="flex justify-between items-start">
-                      <Skeleton className="h-6 w-3/4" />
-                      <Skeleton className="h-5 w-16" />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="flex-grow">
-                    <Skeleton className="h-4 w-full mb-2" />
-                    <Skeleton className="h-4 w-5/6" />
-                  </CardContent>
-                  <CardFooter className="pt-4">
-                    <Skeleton className="h-9 w-full" />
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <ItemGrid
-              items={currentItems}
-              bookmarkedItems={bookmarkedItems}
-              onBookmark={toggleBookmark}
-              layoutType={layoutType}
-            />
-          )}
-        </motion.div>
-      </AnimatePresence>
+                  <motion.div
+                    layoutId="activeLayoutIndicator"
+                    className="absolute bottom-0 h-[3px] bg-primary z-10 transition-all duration-300"
+                    style={{
+                      width: "24px",
+                      left:
+                        layoutType === "compact"
+                          ? "6px"
+                          : layoutType === "grid"
+                            ? "46px"
+                            : "86px",
+                    }}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  />
 
-      <PaginationControls
-        currentPage={currentPage}
-        totalPages={totalPages}
-        itemsPerPage={itemsPerPage}
-        handlePageChange={handlePageChange}
-        handleItemsPerPageChange={handleItemsPerPageChange}
-        itemsPerPageOptions={ITEMS_PER_PAGE_OPTIONS}
-      />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ToggleGroupItem
+                        value="compact"
+                        aria-label="Compact Grid View"
+                        className="relative z-20 data-[state=on]:bg-primary/10 data-[state=on]:text-primary hover:bg-muted/70 transition-all"
+                      >
+                        <Grid3X3 className="h-4 w-4" />
+                      </ToggleGroupItem>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="bottom"
+                      align="center"
+                      className="font-medium"
+                    >
+                      Compact Grid
+                    </TooltipContent>
+                  </Tooltip>
 
-      <div className="text-sm text-muted-foreground text-center">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ToggleGroupItem
+                        value="grid"
+                        aria-label="Grid View"
+                        className="relative z-20 data-[state=on]:bg-primary/10 data-[state=on]:text-primary hover:bg-muted/70 transition-all"
+                      >
+                        <Grid2X2 className="h-4 w-4" />
+                      </ToggleGroupItem>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="bottom"
+                      align="center"
+                      className="font-medium"
+                    >
+                      Standard Grid
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ToggleGroupItem
+                        value="row"
+                        aria-label="Row View"
+                        className="relative z-20 data-[state=on]:bg-primary/10 data-[state=on]:text-primary hover:bg-muted/70 transition-all"
+                      >
+                        <List className="h-4 w-4" />
+                      </ToggleGroupItem>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="bottom"
+                      align="center"
+                      className="font-medium"
+                    >
+                      List View
+                    </TooltipContent>
+                  </Tooltip>
+                </ToggleGroup>
+              </TooltipProvider>
+            </motion.div>
+          </div>
+        </div>
+      </motion.div>
+
+      <motion.div variants={itemVariants}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`${isLoading ? "loading" : "loaded"}-${layoutType}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            layout
+          >
+            {isLoading ? (
+              <div className={`grid gap-6 ${getGridClasses()}`}>
+                {[...Array(itemsPerPage)].map((_, index) => (
+                  <Card
+                    key={index}
+                    className={`flex flex-col h-full ${getCardHeightClass()} overflow-hidden`}
+                  >
+                    <CardHeader className="pb-4">
+                      <div className="flex justify-between items-start">
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-5 w-16" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex-grow">
+                      <Skeleton className="h-4 w-full mb-2" />
+                      <Skeleton className="h-4 w-5/6" />
+                    </CardContent>
+                    <CardFooter className="pt-4">
+                      <Skeleton className="h-9 w-full" />
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <ItemGrid
+                items={currentItems}
+                bookmarkedItems={bookmarkedItems}
+                onBookmark={toggleBookmark}
+                layoutType={layoutType}
+                isBookmarkLoading={isBookmarkLoading}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </motion.div>
+
+      <motion.div variants={itemVariants}>
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          itemsPerPage={itemsPerPage}
+          handlePageChange={handlePageChange}
+          handleItemsPerPageChange={handleItemsPerPageChange}
+          itemsPerPageOptions={ITEMS_PER_PAGE_OPTIONS}
+        />
+      </motion.div>
+
+      <motion.div
+        variants={itemVariants}
+        className="text-sm text-muted-foreground text-center"
+      >
         Showing {indexOfFirstItem + 1} -{" "}
         {Math.min(indexOfLastItem, filteredItems.length)} of{" "}
         {filteredItems.length} items
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
