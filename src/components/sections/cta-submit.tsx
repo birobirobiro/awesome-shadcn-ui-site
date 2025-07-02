@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowRight, Github } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, useInView } from "framer-motion";
+import { ArrowRight, Github } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";

@@ -1,24 +1,9 @@
-// src/components/multi-select.tsx
-
-import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import {
-  CheckIcon,
-  XCircle,
-  ChevronDown,
-  XIcon,
-  WandSparkles,
-} from "lucide-react";
+import { CheckIcon, ChevronDown, XCircle, XIcon } from "lucide-react";
+import * as React from "react";
 
-import { cn } from "@/lib/utils";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -28,6 +13,13 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 const multiSelectVariants = cva(
   "m-1 transition ease-in-out delay-150 hover:-translate-y-1 hover:scale-110 duration-300",
@@ -273,7 +265,7 @@ export const MultiSelect = React.forwardRef<
         </PopoverTrigger>
         <PopoverContent
           className="w-auto p-0"
-          align="end"
+          align="center"
           onEscapeKeyDown={() => setIsPopoverOpen(false)}
         >
           <Command>

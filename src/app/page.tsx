@@ -1,13 +1,12 @@
 "use client";
 
-import { Resource, fetchAndParseReadme } from "@/hooks/use-readme";
-import { isValid, parseISO } from "date-fns";
-import { useEffect, useState } from "react";
-
 import { SubmitCTA } from "@/components/sections/cta-submit";
 import Hero from "@/components/sections/hero";
 import ItemList from "@/components/sections/items-list";
+import { Resource, fetchAndParseReadme } from "@/hooks/use-readme";
+import { isValid, parseISO } from "date-fns";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
 interface Category {
   title: string;
@@ -20,14 +19,16 @@ export default function Home() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredItems, setFilteredItems] = useState<Resource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
       try {
         setIsLoading(true);
+        setError(null);
+
         const fetchedResources = await fetchAndParseReadme();
 
-        // Process categories
         const groupedCategories = fetchedResources.reduce(
           (acc, resource) => {
             if (!EXCLUDED_CATEGORIES.includes(resource.category)) {
@@ -48,12 +49,10 @@ export default function Home() {
           }),
         );
 
-        // Filter out excluded categories
         const eligibleItems = fetchedResources.filter(
           (item) => !EXCLUDED_CATEGORIES.includes(item.category),
         );
 
-        // Sort items by date (newest first) initially
         const sortedItems = eligibleItems.sort((a, b) => {
           const dateA =
             a.date && a.date !== "Unknown" ? parseISO(a.date) : new Date(0);
@@ -68,8 +67,13 @@ export default function Home() {
 
         setCategories(formattedCategories);
         setFilteredItems(sortedItems);
+
+        console.log(
+          `Loaded ${sortedItems.length} items across ${formattedCategories.length} categories`,
+        );
       } catch (error) {
         console.error("Error fetching README:", error);
+        setError("Failed to load resources. Please try again later.");
       } finally {
         setIsLoading(false);
       }
@@ -83,21 +87,20 @@ export default function Home() {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.05,
-        delayChildren: 0.1,
+        staggerChildren: 0.3,
       },
     },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 30 },
     visible: {
       opacity: 1,
       y: 0,
       transition: {
         type: "spring",
-        stiffness: 300,
-        damping: 25,
+        stiffness: 100,
+        damping: 20,
       },
     },
   };
@@ -109,17 +112,25 @@ export default function Home() {
       animate="visible"
       variants={containerVariants}
     >
-      <motion.div variants={itemVariants}>
-        <Hero />
-      </motion.div>
+      <Hero />
 
       <motion.div variants={itemVariants} className="my-12">
-        <ItemList items={filteredItems} categories={categories} />
+        {error ? (
+          <div className="text-center py-12">
+            <p className="text-destructive mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          <ItemList items={filteredItems} categories={categories} />
+        )}
       </motion.div>
 
-      <motion.div variants={itemVariants}>
-        <SubmitCTA />
-      </motion.div>
+      <SubmitCTA />
     </motion.div>
   );
 }

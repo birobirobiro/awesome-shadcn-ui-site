@@ -10,7 +10,7 @@ import { ArrowUpRight, Bookmark, Calendar, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import React, { useMemo } from "react";
 
 type LayoutType = "compact" | "grid" | "row";
@@ -25,9 +25,9 @@ interface ItemCardProps {
   isBookmarked: boolean;
   onBookmark: (id: number) => void;
   layoutType: LayoutType;
+  isBookmarkLoading?: boolean;
 }
 
-// Standard animation settings to ensure consistency
 const standardAnimations = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
@@ -45,8 +45,8 @@ const ItemCard: React.FC<ItemCardProps> = ({
   isBookmarked,
   onBookmark,
   layoutType = "grid",
+  isBookmarkLoading = false,
 }) => {
-  // Get styling based on layout type
   const styles = useMemo(() => {
     switch (layoutType) {
       case "compact":
@@ -116,7 +116,6 @@ const ItemCard: React.FC<ItemCardProps> = ({
   return (
     <motion.div layout {...standardAnimations} className={styles.container}>
       <Card className={cn(`overflow-hidden relative`, styles.card)}>
-        {/* Decorative gradient highlight effect */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent dark:from-primary/10" />
         </div>
@@ -136,7 +135,6 @@ const ItemCard: React.FC<ItemCardProps> = ({
             )}
           >
             {layoutType === "compact" ? (
-              // Compact layout - Title and badge stacked vertically
               <div className="flex flex-col">
                 <CardTitle className={styles.title}>{title}</CardTitle>
                 <Badge
@@ -150,7 +148,6 @@ const ItemCard: React.FC<ItemCardProps> = ({
                 </Badge>
               </div>
             ) : (
-              // Grid and Row layouts - Title and badge side by side
               <div className="flex justify-between items-start gap-2">
                 <CardTitle className={styles.title}>{title}</CardTitle>
                 <Badge
@@ -211,36 +208,36 @@ const ItemCard: React.FC<ItemCardProps> = ({
               "transition-all duration-300 mt-auto",
             )}
           >
-            <AnimatePresence mode="popLayout">
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                whileTap={{ scale: 0.95 }}
-                key={`bookmark-${isBookmarked}-${layoutType}`}
+            <motion.div
+              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            >
+              <Button
+                variant={isBookmarked ? "default" : "outline"}
+                size={layoutType === "compact" ? "sm" : "icon"}
+                onClick={() => !isBookmarkLoading && onBookmark(id)}
+                disabled={isBookmarkLoading}
+                className={cn(
+                  "transition-all duration-300 flex-shrink-0",
+                  styles.bookmarkBtn,
+                  isBookmarked
+                    ? "bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-600"
+                    : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-400 dark:hover:border-gray-600",
+                  isBookmarkLoading && "opacity-50 cursor-not-allowed",
+                )}
               >
-                <Button
-                  variant={isBookmarked ? "default" : "outline"}
-                  size={layoutType === "compact" ? "sm" : "icon"}
-                  onClick={() => onBookmark(id)}
+                <Bookmark
                   className={cn(
-                    "transition-all duration-300 flex-shrink-0",
-                    styles.bookmarkBtn,
-                    isBookmarked
-                      ? "bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-600"
-                      : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-400 dark:hover:border-gray-600",
+                    styles.icon,
+                    "transition-all duration-300",
+                    isBookmarked ? "scale-110 fill-current" : "scale-100",
+                    isBookmarkLoading && "animate-pulse",
                   )}
-                >
-                  <Bookmark
-                    className={cn(
-                      styles.icon,
-                      "transition-transform duration-300",
-                      isBookmarked ? "scale-110" : "",
-                    )}
-                  />
-                </Button>
-              </motion.div>
-            </AnimatePresence>
+                  fill={isBookmarked ? "currentColor" : "none"}
+                />
+              </Button>
+            </motion.div>
 
             <Button
               asChild
