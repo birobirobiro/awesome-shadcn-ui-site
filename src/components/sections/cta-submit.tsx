@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { motion, useInView } from "framer-motion";
 import { ArrowRight, Github } from "lucide-react";
 
+import { PRSubmissionDialog } from "@/components/pr-submission-dialog";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
 
@@ -57,18 +58,34 @@ export function SubmitCTA() {
             </motion.p>
           </motion.div>
           <motion.div variants={itemVariants} className="w-full lg:w-auto">
-            <Button asChild size="lg" className="w-full lg:w-auto text-base">
-              <a
-                href="https://github.com/birobirobiro/awesome-shadcn-ui/blob/main/.github/pull_request_template.md"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center"
+            <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+              <PRSubmissionDialog
+                trigger={
+                  <Button size="lg" className="w-full sm:w-auto text-base">
+                    <Github className="mr-2 h-5 w-5" />
+                    <span>Submit Resource</span>
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                }
+              />
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto text-base"
               >
-                <Github className="mr-2 h-5 w-5" />
-                <span>Open a PR</span>
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </a>
-            </Button>
+                <a
+                  href="https://github.com/birobirobiro/awesome-shadcn-ui/blob/main/.github/pull_request_template.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center"
+                >
+                  <Github className="mr-2 h-5 w-5" />
+                  <span>Manual PR</span>
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </a>
+              </Button>
+            </div>
           </motion.div>
         </motion.div>
       </CardContent>
