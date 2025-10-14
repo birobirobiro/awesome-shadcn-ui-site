@@ -6,8 +6,9 @@
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "format": "prettier --write .",
-    "lint": "next lint"
+    "format": "prettier --write ./src",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@octokit/rest": "^22.0.0",

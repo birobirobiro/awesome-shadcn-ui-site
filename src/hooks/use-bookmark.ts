@@ -6,59 +6,24 @@ export function useBookmarks() {
   const [error, setError] = useState<string | null>(null);
   const lastClickedRef = useRef<{ id: number; timestamp: number } | null>(null);
 
-  const isLocalStorageAvailable = useCallback(() => {
-    try {
-      const test = "__localStorage_test__";
-      localStorage.setItem(test, test);
-      localStorage.removeItem(test);
-      return true;
-    } catch {
-      return false;
-    }
-  }, []);
-
   useEffect(() => {
-    const loadBookmarks = () => {
-      try {
-        setError(null);
-
-        if (!isLocalStorageAvailable()) {
-          setBookmarkedItems([]);
-          setIsLoading(false);
-          return;
-        }
-
-        const storedBookmarks = localStorage.getItem("bookmarkedItems");
-        if (!storedBookmarks) {
-          setBookmarkedItems([]);
-          setIsLoading(false);
-          return;
-        }
-
+    try {
+      const storedBookmarks = localStorage.getItem("bookmarkedItems");
+      if (storedBookmarks) {
         const parsed = JSON.parse(storedBookmarks);
-
         if (
           Array.isArray(parsed) &&
           parsed.every((item) => typeof item === "number")
         ) {
           setBookmarkedItems(parsed);
-        } else {
-          setBookmarkedItems([]);
-          localStorage.removeItem("bookmarkedItems");
         }
-      } catch (err) {
-        setError("Failed to load bookmarks");
-        setBookmarkedItems([]);
-        try {
-          localStorage.removeItem("bookmarkedItems");
-        } catch {}
-      } finally {
-        setIsLoading(false);
       }
-    };
-
-    loadBookmarks();
-  }, [isLocalStorageAvailable]);
+    } catch (err) {
+      console.error("Failed to load bookmarks:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   const toggleBookmark = useCallback(
     (id: number) => {
@@ -81,34 +46,27 @@ export function useBookmarks() {
           : [...prevBookmarks, id];
 
         try {
-          if (isLocalStorageAvailable()) {
-            localStorage.setItem(
-              "bookmarkedItems",
-              JSON.stringify(newBookmarks),
-            );
-          }
+          localStorage.setItem("bookmarkedItems", JSON.stringify(newBookmarks));
+          setError(null);
         } catch (err) {
           setError("Failed to save bookmark");
           return prevBookmarks;
         }
 
-        setError(null);
         return newBookmarks;
       });
     },
-    [isLoading, isLocalStorageAvailable],
+    [isLoading],
   );
 
   const clearBookmarks = useCallback(() => {
     setBookmarkedItems([]);
     try {
-      if (isLocalStorageAvailable()) {
-        localStorage.removeItem("bookmarkedItems");
-      }
+      localStorage.removeItem("bookmarkedItems");
     } catch (err) {
       setError("Failed to clear bookmarks");
     }
-  }, [isLocalStorageAvailable]);
+  }, []);
 
   const isBookmarked = useCallback(
     (id: number) => {

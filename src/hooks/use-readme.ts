@@ -1,3 +1,4 @@
+import { GITHUB_CONFIG } from "@/lib/config";
 import { Octokit } from "@octokit/rest";
 
 const octokit = new Octokit();
@@ -24,8 +25,8 @@ export async function fetchAndParseReadme(): Promise<Resource[]> {
 
   try {
     const response = await octokit.repos.getContent({
-      owner: "birobirobiro",
-      repo: "awesome-shadcn-ui",
+      owner: GITHUB_CONFIG.REPO_OWNER,
+      repo: GITHUB_CONFIG.REPO_NAME,
       path: "README.md",
     });
 
