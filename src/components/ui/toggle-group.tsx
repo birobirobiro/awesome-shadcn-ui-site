@@ -41,6 +41,7 @@ const ToggleGroupItem = React.forwardRef<
     <ToggleGroupPrimitive.Item
       ref={ref}
       className={cn(
+        "cursor-pointer",
         toggleVariants({
           variant: context.variant || variant,
           size: context.size || size,

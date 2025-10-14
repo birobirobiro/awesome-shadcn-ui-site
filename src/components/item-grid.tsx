@@ -10,9 +10,9 @@ interface ItemGridProps {
   bookmarkedItems: number[];
   onBookmark: (id: number) => void;
   layoutType: LayoutType;
+  isBookmarkLoading?: boolean;
 }
 
-// Standard animations for grid and containers
 const standardAnimations = {
   container: {
     initial: { opacity: 0 },
@@ -39,8 +39,8 @@ export function ItemGrid({
   bookmarkedItems,
   onBookmark,
   layoutType = "grid",
+  isBookmarkLoading = false,
 }: ItemGridProps) {
-  // Get the appropriate grid class based on layout type
   const getGridClasses = useCallback(() => {
     switch (layoutType) {
       case "compact":
@@ -54,7 +54,6 @@ export function ItemGrid({
     }
   }, [layoutType]);
 
-  // No items state
   if (items.length === 0) {
     return (
       <motion.div
@@ -112,6 +111,7 @@ export function ItemGrid({
               isBookmarked={bookmarkedItems.includes(item.id)}
               onBookmark={onBookmark}
               layoutType={layoutType}
+              isBookmarkLoading={isBookmarkLoading}
             />
           ))}
         </motion.div>

@@ -1,8 +1,8 @@
+import { GITHUB_CONFIG } from "@/lib/config";
 import { Octokit } from "@octokit/rest";
 
-/**
- * Structure of a parsed resource.
- */
+const octokit = new Octokit();
+
 export interface Resource {
   id: number;
   name: string;
@@ -12,147 +12,91 @@ export interface Resource {
   date: string;
 }
 
-interface RepoConfig {
-  owner: string;
-  repo: string;
-  path: string;
-}
+// Simple cache with 30-minute expiration
+let cachedData: Resource[] | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
-/**
- * Extracts the URL from a markdown link or plain URL string.
- */
-function extractUrl(input: string): string {
-  if (!input) return "";
-  const match = input.match(/\[.*?\]\((.*?)\)/);
-  return match ? match[1].trim() : input.replace(/^Link:?\s*/i, "").trim();
-}
-
-/**
- * Checks if a string contains only dashes or is empty.
- */
-function isOnlyDashesOrEmpty(str: string): boolean {
-  return str.trim() === "" || /^-+$/.test(str.trim());
-}
-
-/**
- * Checks if the row is a markdown table header or separator.
- */
-function isHeaderOrSeparator(parts: string[]): boolean {
-  const normalized = parts.map((p) => p.toLowerCase());
-  return (
-    normalized.includes("name") ||
-    normalized.includes("description") ||
-    normalized.includes("link") ||
-    normalized.includes("date") ||
-    parts.every(isOnlyDashesOrEmpty)
-  );
-}
-
-/**
- * Validates the structure and content of a resource.
- */
-function isValidResource(resource: Resource): boolean {
-  const { name, description, url } = resource;
-  const isNotPlaceholder = (value: string) =>
-    !!value && !["name", "description", "link"].includes(value.toLowerCase());
-
-  return (
-    name.trim() !== "" &&
-    description.trim() !== "" &&
-    url.trim() !== "" &&
-    isNotPlaceholder(name) &&
-    isNotPlaceholder(description) &&
-    isNotPlaceholder(url)
-  );
-}
-
-/**
- * Parses markdown table rows into Resource objects.
- */
-function parseMarkdownTableLine(
-  parts: string[],
-  category: string,
-  id: number
-): Resource | null {
-  if (parts.length < 4) return null;
-
-  const resource: Resource = {
-    id,
-    name: parts[1]?.trim() ?? "",
-    description: parts[2]?.trim() ?? "",
-    url: extractUrl(parts[3] ?? ""),
-    category,
-    date: parts[4]?.trim() ?? "Unknown",
-  };
-
-  return isValidResource(resource) ? resource : null;
-}
-
-/**
- * Parses markdown README content to extract resources.
- */
-function parseReadmeContent(content: string): Resource[] {
-  const lines = content.split("\n").map((line) => line.trim());
-  const resources: Resource[] = [];
-
-  let category = "";
-  let id = 1;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    // Detect category
-    if (line.startsWith("## ")) {
-      category = line.replace(/^##\s*/, "").trim();
-      continue;
-    }
-
-    // Detect table row
-    if (line.startsWith("|") && line.includes("|") && category) {
-      const parts = line.split("|").map((part) => part.trim());
-
-      if (isHeaderOrSeparator(parts)) continue;
-
-      const resource = parseMarkdownTableLine(parts, category, id);
-      if (resource) {
-        resources.push(resource);
-        id++;
-      } else {
-        console.warn(`Skipped malformed or invalid row at line ${i + 1}:`, line);
-      }
-    }
+export async function fetchAndParseReadme(): Promise<Resource[]> {
+  // Check if we have valid cached data
+  if (cachedData && Date.now() - cacheTimestamp < CACHE_DURATION) {
+    return cachedData;
   }
-
-  return resources;
-}
-
-/**
- * Fetches and parses README.md from GitHub to extract structured resources.
- */
-export async function fetchAndParseReadme(
-  config: RepoConfig = {
-    owner: "birobirobiro",
-    repo: "awesome-shadcn-ui",
-    path: "README.md",
-  }
-): Promise<Resource[]> {
-  const octokit = new Octokit();
 
   try {
-    const { data } = await octokit.repos.getContent({...config});
+    const response = await octokit.repos.getContent({
+      owner: GITHUB_CONFIG.REPO_OWNER,
+      repo: GITHUB_CONFIG.REPO_NAME,
+      path: "README.md",
+    });
 
-    if (Array.isArray(data) || !("content" in data)) {
-      throw new Error("Unexpected data format from GitHub API.");
+    if (Array.isArray(response.data) || !("content" in response.data)) {
+      throw new Error("Invalid response data");
     }
 
-    const decoded = Buffer.from(data.content, "base64").toString("utf-8");
-    return parseReadmeContent(decoded);
-  } catch (err) {
-    console.error("Error fetching or parsing README:", err);
-    throw new Error(
-      `Failed to process README.md: ${
-        err instanceof Error ? err.message : "Unknown error"
-      }`
+    const content = Buffer.from(response.data.content, "base64").toString();
+
+    const resources: Resource[] = [];
+    let currentCategory = "";
+    let id = 1;
+
+    const lines = content.split("\n");
+
+    for (const line of lines) {
+      if (line.startsWith("## ")) {
+        currentCategory = line.replace("## ", "").trim();
+      } else if (
+        line.startsWith("| ") &&
+        line.includes(" | ") &&
+        currentCategory
+      ) {
+        const parts = line.split("|").map((part) => part.trim());
+        if (parts.length >= 4) {
+          let url = parts[3];
+          let date = "Unknown";
+
+          // Extract URL from markdown link format [Link](url)
+          const markdownMatch = url.match(/\[(.*?)\]\((.*?)\)/);
+          if (markdownMatch && markdownMatch[2]) {
+            url = markdownMatch[2];
+          } else {
+            // If not in markdown format, remove any "Link:" prefix
+            url = url.replace(/^Link:?\s*/i, "").trim();
+          }
+
+          // Check if there's a date column (parts.length >= 5)
+          if (parts.length >= 5) {
+            date = parts[4];
+          }
+
+          resources.push({
+            id: id++,
+            name: parts[1],
+            description: parts[2],
+            url: url,
+            category: currentCategory,
+            date: date,
+          });
+        }
+      }
+    }
+
+    const filteredResources = resources.filter(
+      (resource) =>
+        resource.name !== "Name" &&
+        resource.description !== "Description" &&
+        resource.url !== "Link" &&
+        resource.url !== "" &&
+        resource.date !== "Added: ----------" &&
+        !resource.date.includes("----------"),
     );
+
+    cachedData = filteredResources;
+    cacheTimestamp = Date.now();
+
+    return filteredResources;
+  } catch (error) {
+    console.error("Error fetching or parsing README:", error);
+    throw error;
   }
 }
