@@ -1,5 +1,5 @@
 import { Octokit } from "@octokit/rest";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 export interface GitHubAuthState {
   isAuthenticated: boolean;
@@ -41,6 +41,7 @@ export function useGitHubAuth() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const startDeviceFlow = useCallback(async () => {
     setIsLoading(true);
@@ -131,10 +132,10 @@ export function useGitHubAuth() {
             return { success: true, user };
           } else if (data.error === "authorization_pending") {
             // Still waiting for user to authorize
-            setTimeout(poll, interval * 1000);
+            pollingTimeoutRef.current = setTimeout(poll, interval * 1000);
           } else if (data.error === "slow_down") {
             // Increase polling interval
-            setTimeout(poll, (interval + 5) * 1000);
+            pollingTimeoutRef.current = setTimeout(poll, (interval + 5) * 1000);
           } else if (data.error === "access_denied") {
             // User denied the authorization
             throw new Error("Authorization was denied by the user");
@@ -161,12 +162,22 @@ export function useGitHubAuth() {
       };
 
       // Start polling
-      setTimeout(poll, interval * 1000);
+      pollingTimeoutRef.current = setTimeout(poll, interval * 1000);
     },
     [],
   );
 
+  const stopPolling = useCallback(() => {
+    if (pollingTimeoutRef.current) {
+      clearTimeout(pollingTimeoutRef.current);
+      pollingTimeoutRef.current = null;
+    }
+  }, []);
+
   const logout = useCallback(() => {
+    // Stop any ongoing polling
+    stopPolling();
+
     setAuthState({
       isAuthenticated: false,
       username: null,
@@ -178,7 +189,7 @@ export function useGitHubAuth() {
       isPolling: false,
     });
     setError(null);
-  }, []);
+  }, [stopPolling]);
 
   const createAuthenticatedOctokit = useCallback(() => {
     if (!authState.token) return null;
@@ -194,6 +205,7 @@ export function useGitHubAuth() {
     error,
     startDeviceFlow,
     logout,
+    stopPolling,
     createAuthenticatedOctokit,
   };
 }

@@ -71,6 +71,7 @@ export function PRSubmissionDialog({ trigger }: PRSubmissionDialogProps) {
     error: authError,
     startDeviceFlow,
     logout,
+    stopPolling,
     createAuthenticatedOctokit,
   } = useGitHubAuth();
   const {
@@ -139,6 +140,8 @@ export function PRSubmissionDialog({ trigger }: PRSubmissionDialogProps) {
 
   const handleClose = useCallback(() => {
     setOpen(false);
+    // Stop any ongoing polling immediately
+    stopPolling();
     // Reset state when dialog closes
     setTimeout(() => {
       setStep("auth");
@@ -146,14 +149,28 @@ export function PRSubmissionDialog({ trigger }: PRSubmissionDialogProps) {
       setSubmissionResult(null);
       logout();
     }, 300);
-  }, [logout]);
+  }, [logout, stopPolling]);
+
+  const handleOpenChange = useCallback(
+    (isOpen: boolean) => {
+      if (!isOpen) {
+        // Dialog is closing - stop polling immediately
+        stopPolling();
+        handleClose();
+      } else {
+        setOpen(true);
+      }
+    },
+    [stopPolling, handleClose],
+  );
 
   const handleBackToAuth = useCallback(() => {
-    // Logout and go back to auth step
+    // Stop polling and logout, then go back to auth step
+    stopPolling();
     logout();
     setStep("auth");
     toast.info("Disconnected from GitHub");
-  }, [logout]);
+  }, [logout, stopPolling]);
 
   // Move to form step when authentication completes
   useEffect(() => {
@@ -166,12 +183,15 @@ export function PRSubmissionDialog({ trigger }: PRSubmissionDialogProps) {
     if (authState.userCode && authState.verificationUri) {
       return (
         <div className="space-y-4">
-          <div className="text-center space-y-2">
-            <Github className="h-12 w-12 mx-auto text-muted-foreground" />
-            <h3 className="text-lg font-semibold">Authorize with GitHub</h3>
-            <p className="text-sm text-muted-foreground">
-              Complete the authorization on GitHub using the code below
-            </p>
+          <div className="text-center space-y-3">
+            <Github className="h-10 w-10 mx-auto text-muted-foreground" />
+            <div>
+              <h3 className="text-lg font-semibold">One-Time GitHub Access</h3>
+              <p className="text-sm text-muted-foreground">
+                This is a secure, one-time authorization that expires after
+                submission
+              </p>
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -180,7 +200,7 @@ export function PRSubmissionDialog({ trigger }: PRSubmissionDialogProps) {
               <div className="flex items-center justify-center gap-2">
                 <Badge
                   variant="outline"
-                  className="text-lg px-4 py-2 font-mono"
+                  className="w-full mx-auto text-center text-lg px-4 py-2 font-mono"
                 >
                   {authState.userCode}
                 </Badge>
@@ -219,8 +239,12 @@ export function PRSubmissionDialog({ trigger }: PRSubmissionDialogProps) {
             </div>
           )}
 
-          <div className="text-xs text-muted-foreground text-center">
-            Enter the code above on GitHub to authorize this application
+          <div className="text-xs text-muted-foreground text-center space-y-1">
+            <p>• Enter the code above on GitHub to authorize</p>
+            <p>
+              • We don't store your credentials - this is temporary access only
+            </p>
+            <p>• You'll need to reconnect for future submissions</p>
           </div>
         </div>
       );
@@ -228,35 +252,43 @@ export function PRSubmissionDialog({ trigger }: PRSubmissionDialogProps) {
 
     return (
       <div className="space-y-4">
-        <div className="text-center space-y-2">
-          <Github className="h-12 w-12 mx-auto text-muted-foreground" />
-          <h3 className="text-lg font-semibold">GitHub Authorization</h3>
-          <p className="text-sm text-muted-foreground">
-            Authorize this app to submit pull requests on your behalf
-          </p>
-          <div className="text-xs text-muted-foreground mt-2 p-2 bg-muted rounded-md">
-            <strong>Permissions requested:</strong> Read public repositories and
-            create pull requests
+        <div className="text-center space-y-3">
+          <Github className="h-10 w-10 mx-auto text-muted-foreground" />
+          <div>
+            <h3 className="text-lg font-semibold">Submit via GitHub</h3>
+            <p className="text-sm text-muted-foreground">
+              One-time device flow - no permanent access, no data stored
+            </p>
           </div>
         </div>
 
-        <Button
-          onClick={handleStartAuth}
-          disabled={authLoading}
-          className="w-full"
-        >
-          {authLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Starting...
-            </>
-          ) : (
-            <>
-              <Github className="mr-2 h-4 w-4" />
-              Authorize with GitHub
-            </>
-          )}
-        </Button>
+        <div className="space-y-3">
+          <div className="text-xs text-muted-foreground p-3 bg-muted/50 rounded-lg space-y-1">
+            <p className="font-medium text-foreground">How it works:</p>
+            <p>• Temporary GitHub authorization (expires after use)</p>
+            <p>• Creates a fork and PR automatically</p>
+            <p>• No credentials stored on our servers</p>
+            <p>• Reconnect required for each new submission</p>
+          </div>
+
+          <Button
+            onClick={handleStartAuth}
+            disabled={authLoading}
+            className="w-full"
+          >
+            {authLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Starting...
+              </>
+            ) : (
+              <>
+                <Github className="mr-2 h-4 w-4" />
+                Start One-Time Authorization
+              </>
+            )}
+          </Button>
+        </div>
 
         {authError && (
           <div className="flex items-center gap-2 text-red-500 text-sm">
@@ -278,9 +310,9 @@ export function PRSubmissionDialog({ trigger }: PRSubmissionDialogProps) {
             className="h-8 w-8 rounded-full"
           />
           <div>
-            <p className="font-medium">Authenticated as {authState.username}</p>
-            <p className="text-sm text-muted-foreground">
-              Ready to submit your resource
+            <p className="font-medium">Connected as {authState.username}</p>
+            <p className="text-xs text-muted-foreground">
+              Temporary access - will disconnect after submission
             </p>
           </div>
         </div>
@@ -393,17 +425,19 @@ export function PRSubmissionDialog({ trigger }: PRSubmissionDialogProps) {
 
   const renderSuccessStep = () => (
     <div className="text-center space-y-4">
-      <CheckCircle2 className="h-16 w-16 mx-auto text-green-500" />
+      <CheckCircle2 className="h-12 w-12 mx-auto text-green-500" />
       <div>
-        <h3 className="text-lg font-semibold">Pull Request Submitted!</h3>
+        <h3 className="text-lg font-semibold">PR Created Successfully!</h3>
         <p className="text-sm text-muted-foreground">
-          Your resource has been submitted for review
+          Your fork and pull request have been created automatically
         </p>
       </div>
 
       {submissionResult && (
-        <div className="space-y-2">
-          <Badge variant="secondary">PR #{submissionResult.prNumber}</Badge>
+        <div className="space-y-3">
+          <Badge variant="secondary" className="text-sm">
+            PR #{submissionResult.prNumber}
+          </Badge>
           <div>
             <Button asChild variant="outline" className="w-full">
               <a
@@ -416,6 +450,11 @@ export function PRSubmissionDialog({ trigger }: PRSubmissionDialogProps) {
               </a>
             </Button>
           </div>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>• Your GitHub access has been disconnected</p>
+            <p>• Reconnect for future submissions</p>
+            <p>• PR will be reviewed by maintainers</p>
+          </div>
         </div>
       )}
 
@@ -426,7 +465,7 @@ export function PRSubmissionDialog({ trigger }: PRSubmissionDialogProps) {
   );
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger || (
           <Button size="lg" className="w-full lg:w-auto text-base">
@@ -439,17 +478,17 @@ export function PRSubmissionDialog({ trigger }: PRSubmissionDialogProps) {
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
-            {step === "auth" && "Submit New Resource"}
-            {step === "form" && "Add Resource Details"}
-            {step === "success" && "Success!"}
+            {step === "auth" && "Submit via GitHub"}
+            {step === "form" && "Resource Details"}
+            {step === "success" && "Submitted Successfully!"}
           </DialogTitle>
           <DialogDescription>
             {step === "auth" &&
-              "Authorize with GitHub to submit a pull request directly from this site."}
+              "One-time device flow - no permanent access, secure temporary authorization."}
             {step === "form" &&
-              "Fill in the details for your awesome shadcn/ui resource."}
+              "Fill in your resource details. This will create a fork and PR automatically."}
             {step === "success" &&
-              "Your resource has been submitted and will be reviewed by the maintainers."}
+              "Your PR has been created and will be reviewed by maintainers."}
           </DialogDescription>
         </DialogHeader>
 

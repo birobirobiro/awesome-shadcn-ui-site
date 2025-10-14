@@ -1,5 +1,10 @@
+import {
+  ERROR_MESSAGES,
+  GITHUB_CONFIG,
+  PR_TEMPLATE,
+  STATUS_MESSAGES,
+} from "@/lib/config";
 import { Octokit } from "@octokit/rest";
-import { format } from "date-fns";
 import { useCallback, useState } from "react";
 
 export interface SubmissionData {
@@ -16,9 +21,6 @@ export interface PRSubmissionResult {
   error?: string;
 }
 
-const REPO_OWNER = "birobirobiro";
-const REPO_NAME = "awesome-shadcn-ui";
-
 export function usePRSubmission() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,8 +29,7 @@ export function usePRSubmission() {
   const insertResourceIntoReadme = useCallback(
     (readmeContent: string, submission: SubmissionData): string => {
       const lines = readmeContent.split("\n");
-      const today = format(new Date(), "yyyy-MM-dd");
-      const newEntry = `| ${submission.name} | ${submission.description} | [Link](${submission.url}) | ${today} |`;
+      const newEntry = `| ${submission.name} | ${submission.description} | [Link](${submission.url}) |`;
 
       let insertIndex = -1;
       let inTargetSection = false;
@@ -120,45 +121,86 @@ export function usePRSubmission() {
     ): Promise<PRSubmissionResult> => {
       setIsSubmitting(true);
       setError(null);
-      setSubmissionStatus("Starting submission process...");
+      setSubmissionStatus(STATUS_MESSAGES.STARTING);
 
       try {
         const userLogin = userInfo.login;
 
-        setSubmissionStatus("Checking for repository fork...");
-        // Ensure a fork exists and get its details
-        const { data: fork } = await octokit.rest.repos.createFork({
-          owner: REPO_OWNER,
-          repo: REPO_NAME,
-        });
+        setSubmissionStatus(STATUS_MESSAGES.CHECKING_FORK);
 
-        // A delay to allow GitHub's API to process the fork creation.
-        await new Promise((resolve) => setTimeout(resolve, 5000));
+        // Check if user already has a fork, create one if not
+        let fork;
+        try {
+          // Try to get existing fork
+          const { data: existingFork } = await octokit.rest.repos.get({
+            owner: userLogin,
+            repo: GITHUB_CONFIG.REPO_NAME,
+          });
+          fork = existingFork;
+          setSubmissionStatus(STATUS_MESSAGES.USING_EXISTING_FORK);
+        } catch (error: any) {
+          if (error.status === 404) {
+            // No fork exists, create one
+            setSubmissionStatus(STATUS_MESSAGES.CREATING_FORK);
+            const { data: newFork } = await octokit.rest.repos.createFork({
+              owner: GITHUB_CONFIG.REPO_OWNER,
+              repo: GITHUB_CONFIG.REPO_NAME,
+            });
+            fork = newFork;
 
-        setSubmissionStatus(
-          "Getting latest commit from original repository...",
-        );
-        const { data: upstreamBranch } = await octokit.rest.repos.getBranch({
-          owner: REPO_OWNER,
-          repo: REPO_NAME,
+            // A delay to allow GitHub's API to process the fork creation.
+            await new Promise((resolve) =>
+              setTimeout(resolve, GITHUB_CONFIG.FORK_CREATION_DELAY),
+            );
+
+            // Verify the fork is accessible
+            setSubmissionStatus(STATUS_MESSAGES.VERIFYING_FORK);
+            try {
+              await octokit.rest.repos.get({
+                owner: userLogin,
+                repo: GITHUB_CONFIG.REPO_NAME,
+              });
+            } catch (verifyError: any) {
+              throw new Error(
+                `${ERROR_MESSAGES.FORK_CREATION}: ${verifyError.message}`,
+              );
+            }
+          } else {
+            throw error;
+          }
+        }
+
+        setSubmissionStatus(STATUS_MESSAGES.GETTING_COMMIT);
+        // Get the latest commit from the fork, not the upstream repo
+        const { data: forkBranch } = await octokit.rest.repos.getBranch({
+          owner: userLogin,
+          repo: GITHUB_CONFIG.REPO_NAME,
           branch: "main",
         });
-        const latestUpstreamSha = upstreamBranch.commit.sha;
+        const latestForkSha = forkBranch.commit.sha;
 
-        setSubmissionStatus("Creating new branch on your fork...");
+        setSubmissionStatus(STATUS_MESSAGES.CREATING_BRANCH);
         const branchName = `add-${submission.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${Date.now()}`;
-        await octokit.rest.git.createRef({
-          owner: userLogin,
-          repo: REPO_NAME,
-          ref: `refs/heads/${branchName}`,
-          sha: latestUpstreamSha, // Create branch from the latest commit of the original repo
-        });
 
-        setSubmissionStatus("Reading latest README for updates...");
+        try {
+          // Create branch from the latest commit of the fork
+          await octokit.rest.git.createRef({
+            owner: userLogin,
+            repo: GITHUB_CONFIG.REPO_NAME,
+            ref: `refs/heads/${branchName}`,
+            sha: latestForkSha,
+          });
+        } catch (branchError: any) {
+          throw new Error(
+            `${ERROR_MESSAGES.BRANCH_CREATION}: ${branchError.message}`,
+          );
+        }
+
+        setSubmissionStatus(STATUS_MESSAGES.READING_README);
         // Get the README content from the original repository to ensure it's the latest version
         const { data: readmeData } = await octokit.rest.repos.getContent({
-          owner: REPO_OWNER,
-          repo: REPO_NAME,
+          owner: GITHUB_CONFIG.REPO_OWNER,
+          repo: GITHUB_CONFIG.REPO_NAME,
           path: "README.md",
         });
 
@@ -167,9 +209,7 @@ export function usePRSubmission() {
           !("content" in readmeData) ||
           !readmeData.sha
         ) {
-          throw new Error(
-            "Could not fetch README.md from original repository.",
-          );
+          throw new Error(ERROR_MESSAGES.README_FETCH);
         }
         const currentContent = Buffer.from(
           readmeData.content,
@@ -183,13 +223,11 @@ export function usePRSubmission() {
           submission,
         );
 
-        setSubmissionStatus("Committing your changes to the new branch...");
-        // We must update the file on the newly created branch.
-        // To do this, we need the SHA of the README file on that branch.
-        // Since we just created the branch from the upstream main, the SHA will be the same.
+        setSubmissionStatus(STATUS_MESSAGES.COMMITTING);
+        // Update README on the newly created branch using the upstream SHA
         await octokit.rest.repos.createOrUpdateFileContents({
           owner: userLogin,
-          repo: REPO_NAME,
+          repo: GITHUB_CONFIG.REPO_NAME,
           path: "README.md",
           message: `feat: Add ${submission.name}`,
           content: Buffer.from(updatedContent).toString("base64"),
@@ -197,30 +235,14 @@ export function usePRSubmission() {
           branch: branchName,
         });
 
-        setSubmissionStatus("Creating pull request...");
-        const prBody = `## Describe the awesome resource you want to add
+        setSubmissionStatus(STATUS_MESSAGES.CREATING_PR);
 
-**What is it?**  
-${submission.description}
-
-## **Which section does it belong to?**  
-- [x] ${submission.category}
-
-**Additional details**  
-Resource URL: ${submission.url}
-
-## **Checklist**
-- [x] I verified that the resource is listed in alphabetical order within its section.
-- [x] I checked that the resource is not already listed.
-- [x] I provided a clear and concise description of the resource.
-- [x] I included a valid and working link to the resource.
-- [x] I assigned the correct section to the resource.
-
-Submitted via awesome-shadcn/ui website by @${userInfo.login}`;
+        // Generate PR body using template
+        const prBody = generatePRBody(submission, userInfo.login);
 
         const { data: pr } = await octokit.rest.pulls.create({
-          owner: REPO_OWNER,
-          repo: REPO_NAME,
+          owner: GITHUB_CONFIG.REPO_OWNER,
+          repo: GITHUB_CONFIG.REPO_NAME,
           title: `feat: Add ${submission.name}`,
           head: `${userLogin}:${branchName}`,
           base: "main",
@@ -233,8 +255,7 @@ Submitted via awesome-shadcn/ui website by @${userInfo.login}`;
           prUrl: pr.html_url,
         };
       } catch (err: any) {
-        console.error("PR submission error:", err);
-        const errorMessage = err.message || "Failed to submit pull request";
+        const errorMessage = err.message || ERROR_MESSAGES.PR_CREATION;
         setError(errorMessage);
         return {
           success: false,
@@ -247,6 +268,37 @@ Submitted via awesome-shadcn/ui website by @${userInfo.login}`;
     },
     [insertResourceIntoReadme],
   );
+
+  // Generate PR body using template
+  const generatePRBody = (
+    submission: SubmissionData,
+    userLogin: string,
+  ): string => {
+    const { HEADER, SECTIONS, CHECKLIST_ITEMS } = PR_TEMPLATE;
+
+    return `---
+name: "${HEADER.name}"
+about: "${HEADER.about}"
+labels:
+${HEADER.labels.map((label) => `  - ${label}`).join("\n")}
+---
+
+${SECTIONS.DESCRIPTION}
+
+**What is it?**  
+${submission.description}
+
+${SECTIONS.CATEGORY}  
+- [x] ${submission.category}
+
+${SECTIONS.ADDITIONAL_DETAILS}  
+Resource URL: ${submission.url}
+
+${SECTIONS.CHECKLIST}
+${CHECKLIST_ITEMS.AUTOMATED.map((item) => `- [x] ${item}`).join("\n")}
+
+Submitted via website by @${userLogin}`;
+  };
 
   return {
     isSubmitting,
